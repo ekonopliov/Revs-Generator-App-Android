@@ -24,11 +24,6 @@ import java.util.UUID;
 
 public class MainActivity extends AppCompatActivity {
 
-    final MediaPlayer mediaPlayer1 = MediaPlayer.create(this, R.raw.no1);
-    final MediaPlayer mediaPlayer2 = MediaPlayer.create(this, R.raw.no2);
-    final MediaPlayer mediaPlayer3 = MediaPlayer.create(this, R.raw.no3);
-    final MediaPlayer mediaPlayer4 = MediaPlayer.create(this, R.raw.no4);
-
     BluetoothAdapter mBluetoothAdapter;
     BluetoothSocket mmSocket;
     BluetoothDevice mmDevice;
@@ -40,18 +35,40 @@ public class MainActivity extends AppCompatActivity {
     volatile boolean stopWorker;
     String deviceName = "HC-06";
 
-    Button btnPlay = findViewById(R.id.btnPlay);
-    Button btnConnect = findViewById(R.id.btnConnect);
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        Button btnPlay = findViewById(R.id.btnPlay);
+        Button btnConnect = findViewById(R.id.btnConnect);
+
+        final MediaPlayer mediaPlayer1 = MediaPlayer.create(this, R.raw.no1);
+        final MediaPlayer mediaPlayer2 = MediaPlayer.create(this, R.raw.no2);
+        final MediaPlayer mediaPlayer3 = MediaPlayer.create(this, R.raw.no3);
+        final MediaPlayer mediaPlayer4 = MediaPlayer.create(this, R.raw.no4);
+
         btnPlay.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                letRev();
+                switch (getRandomNumberInRange(1, 4)) {
+                    case 1:
+                        mediaPlayer1.start();
+                        break;
+
+                    case 2:
+                        mediaPlayer2.start();
+                        break;
+
+                    case 3:
+                        mediaPlayer3.start();
+                        break;
+
+                    default:
+                        mediaPlayer4.start();
+                        break;
+                }
             }
         });
 
@@ -59,8 +76,9 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 try{
-                    findBT();
-                    openBT();
+                   if(findBT()) {
+                       openBT();
+                   }
                 } catch (IOException e){
                     Toast.makeText(MainActivity.this,"Exeption in MainActivity btnConnectListener",Toast.LENGTH_SHORT).show();
                 }
@@ -68,18 +86,6 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-    }
-
-    private void letRev(){
-        switch (getRandomNumberInRange(1,4)){
-            case 1:  mediaPlayer1.start();  break;
-
-            case 2:  mediaPlayer2.start();  break;
-
-            case 3:  mediaPlayer3.start();  break;
-
-            default: mediaPlayer4.start();  break;
-        }
     }
 
     private int getRandomNumberInRange(int min, int max) {
@@ -92,17 +98,19 @@ public class MainActivity extends AppCompatActivity {
         return r.nextInt((max - min) + 1) + min;
     }
 
-    void analyzeReceivedData(String data){
+    void analyzeReceivedData(String data) {
 
         System.out.println("Received data: " + data);
     }
 
-    void findBT()
+
+    boolean findBT()
     {
         mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
         if(mBluetoothAdapter == null)
         {
             Toast.makeText(this,"No bluetooth adapter available",Toast.LENGTH_SHORT).show();
+            return false;
         }
 
         if(!mBluetoothAdapter.isEnabled())
@@ -124,6 +132,7 @@ public class MainActivity extends AppCompatActivity {
             }
         }
         Toast.makeText(this,"Bluetooth device found",Toast.LENGTH_SHORT).show();
+        return true;
     }
 
     void openBT() throws IOException
