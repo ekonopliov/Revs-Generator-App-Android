@@ -1,5 +1,9 @@
 <resources>
-    <string name="app_name">My Application</string>
+    <string name="app_name">GET EXHAUST</string>
     <string name="connect_to_system">Connect to system</string>
     <string name="play">Play</string>
+    <string name="system_status">System status:</string>
+    <string name="disconnected">Disconnected</string>
+    <string name="exhaust_system">Exhaust System</string>
+    <string name="exhaust_system_sti">Exhaust System STI</string>
 </resources>
