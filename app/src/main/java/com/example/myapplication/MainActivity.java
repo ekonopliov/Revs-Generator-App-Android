@@ -10,6 +10,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.graphics.Color;
 import android.graphics.PorterDuff;
+import android.graphics.drawable.ColorDrawable;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.os.Handler;
@@ -26,6 +27,8 @@ import android.widget.Toast;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
@@ -54,14 +57,24 @@ public class MainActivity extends AppCompatActivity {
     Switch switchExhaustSystemFirst;
     Switch switchExhaustSystemSecond;
 
+    Button btnRev;
+    ConstraintLayout layout;
+
     //Volume controls
     AudioManager audioManager;
     SeekBar seekBarLoudness;
+    SeekBar seekBarSimulation;
 
     //System status variable
     TextView systemStatus;
+    TextView rpm;
+    int MAX_RPM = 4000;
+    int MIN_RPM = 540;
+    int ZONES_COUNT = 11;
+    int RPM_INTERVAL = (MAX_RPM - MIN_RPM) / ZONES_COUNT;
 
     private final BroadcastReceiver BTReceiver = new BroadcastReceiver() {
+        @SuppressLint("SetTextI18n")
         @Override
         public void onReceive(Context context, Intent intent) {
             String action = intent.getAction();
@@ -105,12 +118,14 @@ public class MainActivity extends AppCompatActivity {
 
         //Connect button
         final Button btnConnect = findViewById(R.id.btnConnect);
+        btnRev = findViewById(R.id.btnRev);
 
         //Layout
-        final ConstraintLayout layout = findViewById(R.id.background);
+        layout = findViewById(R.id.background);
 
         //System satus
         systemStatus = findViewById(R.id.textViewSystemStatus);
+        rpm = findViewById(R.id.txtRPM);
 
         //Exhaust switches
         switchExhaustSystemFirst = findViewById(R.id.switchExhaustSystemFirst);
@@ -122,11 +137,21 @@ public class MainActivity extends AppCompatActivity {
         audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
         initControls();
 
+        seekBarSimulation = findViewById(R.id.seekBarRPMSilmulation);
+
+        mediaPlayerExhaustFirst = MediaPlayer.create(MainActivity.this, R.raw.soundecho2);
+        mediaPlayerExhaustFirst.start();
+        mediaPlayerExhaustFirst.setLooping(true);
+
         //Design stuff
         btnConnect.setBackgroundColor(Color.argb( 255,100,0,0));  //red
         layout.setBackgroundColor(Color.argb( 255,16,16,16));  //dark gray
         seekBarLoudness.getProgressDrawable().setColorFilter(Color.argb( 255,100,0,0), PorterDuff.Mode.SRC_IN); // red
         seekBarLoudness.getThumb().setColorFilter(Color.argb( 255,100,0,0), PorterDuff.Mode.SRC_IN); //red
+
+
+        seekBarSimulation.getProgressDrawable().setColorFilter(Color.argb( 255,100,0,0), PorterDuff.Mode.SRC_IN); // red
+        seekBarSimulation.getThumb().setColorFilter(Color.argb( 255,100,0,0), PorterDuff.Mode.SRC_IN); //red
 
         //Connect button listener
         btnConnect.setOnClickListener(new View.OnClickListener() {
@@ -147,6 +172,24 @@ public class MainActivity extends AppCompatActivity {
 
         });
 
+        seekBarSimulation.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
+                            rpm.setText(String.valueOf(i));
+                            analyzeRPM(i);
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+
+            }
+        });
+
         //First exhaust switch listener
         switchExhaustSystemFirst.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -154,14 +197,15 @@ public class MainActivity extends AppCompatActivity {
 
                     if(switchExhaustSystemFirst.isChecked()) {
                         switchExhaustSystemFirst.getTrackDrawable().setColorFilter(Color.argb(255, 100, 0, 0), PorterDuff.Mode.SRC_IN);
+                        mediaPlayerExhaustFirst.reset();
                         mediaPlayerExhaustFirst = MediaPlayer.create(MainActivity.this, R.raw.soundecho);
                         mediaPlayerExhaustFirst.start();
-                        mediaPlayerExhaustFirst.setLooping(true);
+                        audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, 13, 0);
+                        switchExhaustSystemSecond.setChecked(false);
+                        switchExhaustSystemSecond.getTrackDrawable().setColorFilter(Color.argb( 255,60,60,60), PorterDuff.Mode.SRC_IN);
                     }
                     else {
-                        if(mediaPlayerExhaustFirst != null){
-                            mediaPlayerExhaustFirst.reset();
-                        }
+                        audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, 1, 0);
                         switchExhaustSystemFirst.getTrackDrawable().setColorFilter(Color.argb( 255,60,60,60), PorterDuff.Mode.SRC_IN);
                     }
 
@@ -176,19 +220,49 @@ public class MainActivity extends AppCompatActivity {
 
                 if(switchExhaustSystemSecond.isChecked()) {
                     switchExhaustSystemSecond.getTrackDrawable().setColorFilter(Color.argb(255, 100, 0, 0), PorterDuff.Mode.SRC_IN);
-                    mediaPlayerExhaustSecond = MediaPlayer.create(MainActivity.this, R.raw.echosound2);
-                    mediaPlayerExhaustSecond.start();
-                    mediaPlayerExhaustSecond.setLooping(true);
+                    mediaPlayerExhaustFirst.reset();
+                    mediaPlayerExhaustFirst = MediaPlayer.create(MainActivity.this, R.raw.soundecho2);
+                    mediaPlayerExhaustFirst.start();
+                    audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, 13, 0);
+                    switchExhaustSystemFirst.setChecked(false);
+                    switchExhaustSystemFirst.getTrackDrawable().setColorFilter(Color.argb( 255,60,60,60), PorterDuff.Mode.SRC_IN);
                 }
                 else {
-                    if(mediaPlayerExhaustSecond != null){
-                        mediaPlayerExhaustSecond.reset();
-                    }
+                    audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, 1, 0);
                     switchExhaustSystemSecond.getTrackDrawable().setColorFilter(Color.argb( 255,60,60,60), PorterDuff.Mode.SRC_IN);
                 }
             }
 
         });
+
+        btnRev.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+               try {
+                   setRandomRev();
+                   if(switchExhaustSystemFirst.isChecked() || switchExhaustSystemSecond.isChecked()) {
+                   audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, 15, 0);
+                   mediaPlayerRev.start();
+                   Thread.sleep(1000);
+                   audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, 13, 0);
+                   }
+                   else{
+                       mediaPlayerExhaustFirst.reset();
+                       audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, 15, 0);
+                       mediaPlayerRev.start();
+                       Thread.sleep(1000);
+                       audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, 1, 0);
+                       mediaPlayerExhaustFirst = MediaPlayer.create(MainActivity.this, R.raw.soundecho2);
+                       mediaPlayerExhaustFirst.start();
+                       mediaPlayerExhaustFirst.setLooping(true);
+                   }
+
+               } catch (InterruptedException e){
+
+               }
+            }
+        });
+
 
     }
 
@@ -197,7 +271,7 @@ public class MainActivity extends AppCompatActivity {
             audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
             seekBarLoudness.setMax(audioManager
                     .getStreamMaxVolume(AudioManager.STREAM_MUSIC));
-            audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, 15, 0);
+            audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, 1, 0);
             seekBarLoudness.setProgress(audioManager
                     .getStreamVolume(AudioManager.STREAM_MUSIC));
 
@@ -212,8 +286,7 @@ public class MainActivity extends AppCompatActivity {
 
                 @Override
                 public void onProgressChanged(SeekBar arg0, int progress, boolean arg2) {
-                    audioManager.setStreamVolume(AudioManager.STREAM_MUSIC,
-                            progress, 0);
+                    audioManager.setStreamVolume(AudioManager.STREAM_MUSIC,progress, 0);
                 }
             });
         } catch (Exception e) {
@@ -240,44 +313,122 @@ public class MainActivity extends AppCompatActivity {
             case "1":
                 switchExhaustSystemFirst.getTrackDrawable().setColorFilter(Color.argb(255, 100, 0, 0), PorterDuff.Mode.SRC_IN);
                 switchExhaustSystemFirst.setChecked(true);
-                mediaPlayerExhaustFirst = MediaPlayer.create(this, R.raw.soundecho);
-                mediaPlayerExhaustFirst.start();
-                mediaPlayerExhaustFirst.setLooping(true);
+                audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, 13, 0);
                 break;
 
             case "2":
                 if(mediaPlayerExhaustFirst!=null) {
                     switchExhaustSystemFirst.getTrackDrawable().setColorFilter(Color.argb(255, 60, 60, 60), PorterDuff.Mode.SRC_IN);
                     switchExhaustSystemFirst.setChecked(false);
-                    mediaPlayerExhaustFirst.reset();
+                    audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, 1, 0);
                 }
                 break;
 
             case "3":
                 switchExhaustSystemSecond.getTrackDrawable().setColorFilter(Color.argb(255, 100, 0, 0), PorterDuff.Mode.SRC_IN);
                 switchExhaustSystemSecond.setChecked(true);
-                mediaPlayerExhaustSecond = MediaPlayer.create(this, R.raw.echosound2);
-                mediaPlayerExhaustSecond.start();
-                mediaPlayerExhaustSecond.setLooping(true);
+                audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, 13, 0);
                 break;
             case "4":
                 if(mediaPlayerExhaustSecond!=null) {
                     switchExhaustSystemSecond.getTrackDrawable().setColorFilter(Color.argb( 255,60,60,60), PorterDuff.Mode.SRC_IN);
                     switchExhaustSystemSecond.setChecked(false);
-                    mediaPlayerExhaustSecond.reset();
+                    audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, 1, 0);
                 }
                 break;
 
             case "5":
-                if(data.equals("5")) {
-                    mediaPlayerRev = MediaPlayer.create(this, R.raw.soundfire);
+                try {
+                    setRandomRev();
+                    mediaPlayerExhaustFirst.reset();
+                    audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, 15, 0);
                     mediaPlayerRev.start();
+                    Thread.sleep(1000);
+                    if(switchExhaustSystemFirst.isChecked() || switchExhaustSystemSecond.isChecked()) {
+                        audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, 13, 0);
+                    }
+                    else audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, 1, 0);
+                    mediaPlayerExhaustFirst = MediaPlayer.create(MainActivity.this, R.raw.soundecho2);
+                    mediaPlayerExhaustFirst.start();
+                    mediaPlayerExhaustFirst.setLooping(true);
+                } catch (InterruptedException e){
+
+                }
+                break;
+                default:
+                    if(Integer.parseInt(data) > 500){
+                    rpm.setText(data);
+                    analyzeRPM(Integer.parseInt(data));
                 }
                 break;
         }
-        Toast.makeText(this,"Received data: " + data ,Toast.LENGTH_SHORT).show();
+        //Toast.makeText(this,"Received data: " + data ,Toast.LENGTH_SHORT).show();
     }
 
+    void analyzeRPM(int value){
+
+        if(value < MIN_RPM + (RPM_INTERVAL)){
+            mediaPlayerExhaustFirst = MediaPlayer.create(MainActivity.this, R.raw.soundecho100);
+            mediaPlayerExhaustFirst.start();
+        }
+        else if(value > MIN_RPM + (RPM_INTERVAL) && value < MIN_RPM + (RPM_INTERVAL * 2)){
+            mediaPlayerExhaustFirst = MediaPlayer.create(MainActivity.this, R.raw.soundecho120);
+            mediaPlayerExhaustFirst.start();
+        }
+        else if(value > MIN_RPM + (RPM_INTERVAL * 2) && value < MIN_RPM + (RPM_INTERVAL * 3)){
+            mediaPlayerExhaustFirst = MediaPlayer.create(MainActivity.this, R.raw.soundecho140);
+            mediaPlayerExhaustFirst.start();
+        }
+        else if(value > MIN_RPM + (RPM_INTERVAL * 3) && value < MIN_RPM + (RPM_INTERVAL * 4)){
+            mediaPlayerExhaustFirst = MediaPlayer.create(MainActivity.this, R.raw.soundecho160);
+            mediaPlayerExhaustFirst.start();
+        }
+        else if(value > MIN_RPM + (RPM_INTERVAL * 4) && value < MIN_RPM + (RPM_INTERVAL * 5)){
+            mediaPlayerExhaustFirst = MediaPlayer.create(MainActivity.this, R.raw.soundecho180);
+            mediaPlayerExhaustFirst.start();
+        }
+        else if(value > MIN_RPM + (RPM_INTERVAL * 5) && value < MIN_RPM + (RPM_INTERVAL * 6)){
+            mediaPlayerExhaustFirst = MediaPlayer.create(MainActivity.this, R.raw.soundecho200);
+            mediaPlayerExhaustFirst.start();
+        }
+        else if(value > MIN_RPM + (RPM_INTERVAL * 6) && value < MIN_RPM + (RPM_INTERVAL * 7)){
+            mediaPlayerExhaustFirst = MediaPlayer.create(MainActivity.this, R.raw.soundecho220);
+            mediaPlayerExhaustFirst.start();
+        }
+        else if(value > MIN_RPM + (RPM_INTERVAL * 7) && value < MIN_RPM + (RPM_INTERVAL * 8)){
+            mediaPlayerExhaustFirst = MediaPlayer.create(MainActivity.this, R.raw.soundecho240);
+            mediaPlayerExhaustFirst.start();
+        }
+        else if(value > MIN_RPM + (RPM_INTERVAL * 8) && value < MIN_RPM + (RPM_INTERVAL * 9)){
+            mediaPlayerExhaustFirst = MediaPlayer.create(MainActivity.this, R.raw.soundecho260);
+            mediaPlayerExhaustFirst.start();
+        }
+        else if(value > MIN_RPM + (RPM_INTERVAL * 9) && value < MIN_RPM + (RPM_INTERVAL * 10)){
+            mediaPlayerExhaustFirst = MediaPlayer.create(MainActivity.this, R.raw.soundecho280);
+            mediaPlayerExhaustFirst.start();
+        }
+        else if(value > MIN_RPM + (RPM_INTERVAL * 10)){
+            mediaPlayerExhaustFirst = MediaPlayer.create(MainActivity.this, R.raw.soundecho300);
+            mediaPlayerExhaustFirst.start();
+        }
+    }
+
+    void setRandomRev(){
+
+       int random =  getRandomNumberInRange(1,3);
+
+       switch (random) {
+           case 1:
+               mediaPlayerRev = MediaPlayer.create(MainActivity.this, R.raw.soundfire);    //TODO: set to other sound file 1
+               break;
+           case 2:
+               mediaPlayerRev = MediaPlayer.create(MainActivity.this, R.raw.soundfire);    //TODO: set to other sound file 2
+               break;
+           case 3:
+               mediaPlayerRev = MediaPlayer.create(MainActivity.this, R.raw.soundfire);   //TODO: set to other sound file 3
+               break;
+       }
+    }
 
     //finds and initializes BT device with name deviceName
     boolean findBT()
