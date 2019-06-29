@@ -1,5 +1,4 @@
 package com.example.myapplication;
-
 import android.annotation.SuppressLint;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
@@ -10,7 +9,6 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.graphics.Color;
 import android.graphics.PorterDuff;
-import android.graphics.drawable.ColorDrawable;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.os.Handler;
@@ -23,12 +21,9 @@ import android.widget.SeekBar;
 import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
@@ -218,14 +213,14 @@ public class MainActivity extends AppCompatActivity {
                     if(switchExhaustSystemFirst.isChecked() || switchExhaustSystemSecond.isChecked()) {
                         audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, 15, 0);
                         mediaPlayerRev.start();
-                        Thread.sleep(1000);
+                        Thread.sleep(1100);
                         audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, 13, 0);
                     }
                     else{
                         mediaPlayerExhaustFirst.reset();
                         audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, 15, 0);
                         mediaPlayerRev.start();
-                        Thread.sleep(1000);
+                        Thread.sleep(1100);
                         audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, 1, 0);
                         mediaPlayerExhaustFirst = MediaPlayer.create(MainActivity.this, R.raw.soundecho2);
                         mediaPlayerExhaustFirst.start();
@@ -315,17 +310,24 @@ public class MainActivity extends AppCompatActivity {
             case "5":
                 try {
                     setRandomRev();
-                    mediaPlayerExhaustFirst.reset();
-                    audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, 15, 0);
-                    mediaPlayerRev.start();
-                    Thread.sleep(1000);
                     if(switchExhaustSystemFirst.isChecked() || switchExhaustSystemSecond.isChecked()) {
+                        audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, 15, 0);
+                        mediaPlayerRev.start();
+                        Thread.sleep(1100);
                         audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, 13, 0);
                     }
-                    else audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, 1, 0);
-                    mediaPlayerExhaustFirst = MediaPlayer.create(MainActivity.this, R.raw.soundecho2);
-                    mediaPlayerExhaustFirst.start();
-                    mediaPlayerExhaustFirst.setLooping(true);
+                    else{
+                        mediaPlayerExhaustFirst.stop();
+                        mediaPlayerExhaustFirst.reset();
+                        audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, 15, 0);
+                        mediaPlayerRev.start();
+                        Thread.sleep(1100);
+                        audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, 1, 0);
+                        mediaPlayerExhaustFirst = MediaPlayer.create(MainActivity.this, R.raw.soundecho2);
+                        mediaPlayerExhaustFirst.start();
+                        mediaPlayerExhaustFirst.setLooping(true);
+                    }
+
                 } catch (InterruptedException e){
 
                 }
@@ -345,13 +347,13 @@ public class MainActivity extends AppCompatActivity {
 
         switch (random) {
             case 1:
-                mediaPlayerRev = MediaPlayer.create(MainActivity.this, R.raw.soundfire);    //TODO: set to other sound file 1
+                mediaPlayerRev = MediaPlayer.create(MainActivity.this, R.raw.soundecho9);    //TODO: set to other sound file 1
                 break;
             case 2:
-                mediaPlayerRev = MediaPlayer.create(MainActivity.this, R.raw.soundfire);    //TODO: set to other sound file 2
+                mediaPlayerRev = MediaPlayer.create(MainActivity.this, R.raw.soundecho9);    //TODO: set to other sound file 2
                 break;
             case 3:
-                mediaPlayerRev = MediaPlayer.create(MainActivity.this, R.raw.soundfire);   //TODO: set to other sound file 3
+                mediaPlayerRev = MediaPlayer.create(MainActivity.this, R.raw.soundecho9);   //TODO: set to other sound file 3
                 break;
         }
     }

@@ -18,7 +18,7 @@ void setup()
 void loop()
 {
  if (obd.readPID(PID_RPM, value)) {
-  if(value > 2800){
+  if(value > 2400){
     zoneEntered = true;
   }
   if(zoneEntered){
@@ -39,4 +39,5 @@ void loop()
     }
     mySerial.write(10);
  }
+ delay(180);
 }
